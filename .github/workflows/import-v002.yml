@@ -34,7 +34,7 @@ jobs:
           rm -f domov-v002-source.tgz
           rm -f .nojekyll 404.html apple-touch-icon.png favicon.svg icon-192.png icon-512.png icon-maskable-512.png manifest.webmanifest sw.js workbox-*.js
           rm -f index-*.css index-*.js
-          rm -f .github/workflows/import-v002.yml
+          rm -f .github/workflows/deploy-pages.yml
 
       - name: Reject sensitive values
         run: |
