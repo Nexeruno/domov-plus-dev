@@ -1,6 +1,6 @@
-# Domov+ V0.0.2
+# Domov+ V0.0.3 (stabilizace před uzamčením)
 
-Vývojový milník rodinné PWA: bezpečná autentizace, volitelné passkey přihlášení, domácnosti, rovnocenní vlastníci a jednorázové e-mailové pozvánky.
+Rodinná PWA: e-mailová autentizace, volitelné rychlé přihlášení, domácnosti s rovnocennými vlastníky, jednorázové e-mailové pozvánky a jeden sdílený online nákupní seznam pro každou domácnost. Nákup se mezi otevřenými klienty obnovuje přes Supabase Realtime. Bez internetu nelze provádět změny; offline fronta a synchronizace nejsou součástí V0.0.3.
 
 ## Technologie
 
@@ -30,7 +30,7 @@ Edge Function `send-household-invitation` vyžaduje serverové Supabase secrets:
 
 Tyto hodnoty nejsou součástí repozitáře. Supabase URL a vestavěný klientský klíč poskytuje prostředí Edge Functions.
 
-## Kontroly
+## Kontroly a vrstvy testů
 
 ```sh
 npm test
@@ -39,14 +39,17 @@ npm run build
 npm audit --omit=dev
 ```
 
-Databázová/RLS sada je v `supabase/tests/households_v002_security.sql`. Běží v transakci a na konci provede `rollback`.
+Unit/component testy v `src/**/*.test.ts(x)` ověřují autentizační a domácnostní logiku, vykreslení chybového stavu, nákupní mutace a souběžné Realtime refreshe. Databázové/RLS sady `supabase/tests/households_v002_security.sql` a `supabase/tests/shopping_v003_security.sql` se spouštějí proti vývojové PostgreSQL databázi po aplikaci všech migrací v transakci a na konci provedou `rollback`. Samotné `npm test` databázové SQL testy nespouští.
 
 Živé testy používají výhradně dočasné vývojové účty a proměnné prostředí z `.env.example`:
 
 ```sh
 npm run test:e2e:api
 npm run test:e2e:email
+npm run test:e2e:shopping
 ```
+
+`test:e2e:api` a `test:e2e:shopping` jsou živé API/Realtime integrační E2E skripty, ne test skutečného vykreslení v prohlížeči. Fyzický PWA test instalace, aktualizace a ovládání na Androidu a iPhonu je samostatný ruční krok. Živý E2E vyžaduje testovací účty a bezpečně poskytnuté proměnné prostředí; bez nich ho nelze považovat za spuštěný.
 
 ## Bezpečnost
 
@@ -55,7 +58,8 @@ npm run test:e2e:email
 - Pozvánkové tokeny jsou jednorázové; databáze ukládá pouze SHA-256 hash.
 - E-mail pozvánky musí odpovídat e-mailu přihlášeného účtu.
 - Skutečné secrets patří pouze do Supabase/GitHub nastavení, nikdy do Git historie.
+- Nákupní položky se čtou jen v příslušné domácnosti; mutace jsou auditované RPC s kontrolou členství a verze. Aktivní duplicity omezuje databázový unikátní index.
 
-## Rozsah V0.0.2
+## Rozsah V0.0.3
 
-Verze obsahuje pouze autentizaci, PWA, domácnosti a pozvánky. Neobsahuje nákupy, energii, notifikace, místnosti, smart-home ani AI.
+Obsahuje online nákup; Dnes a Energie jsou pouze nefunkční zástupné obrazovky. Neobsahuje offline synchronizaci, push notifikace, další části Energie, místnosti, smart-home ani AI. Verze není zatím označena tagem.
