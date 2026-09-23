@@ -1,0 +1,90 @@
+name: Import and lock Domov+ V0.0.2
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/import-v002.yml
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  import-test-tag-deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Import source tree
+        run: |
+          tar -xzf domov-v002-source.tgz
+          rm -f domov-v002-source.tgz
+          rm -f .nojekyll 404.html apple-touch-icon.png favicon.svg icon-192.png icon-512.png icon-maskable-512.png manifest.webmanifest sw.js workbox-*.js
+          rm -f index-*.css index-*.js
+          rm -f .github/workflows/import-v002.yml
+
+      - name: Reject sensitive values
+        run: |
+          if grep -RIlE 'xkeysib-|xsmtpsib-|sb_secret_|Domov-Test-[AB]-2026' --exclude-dir=.git .; then
+            echo 'Repository contains a forbidden sensitive value.'
+            exit 1
+          fi
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run automated tests
+        run: npm test
+
+      - name: Run TypeScript check
+        run: npm run typecheck
+
+      - name: Audit production dependencies
+        run: npm audit --omit=dev
+
+      - name: Build production application
+        run: npm run build
+        env:
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
+
+      - name: Commit source and create release tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Domov+ V0.0.2 - kompletni zdrojovy projekt"
+          git tag -a v0.0.2 -m "Domov+ V0.0.2"
+          git push origin main
+          git push origin v0.0.2
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload production build
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+      - name: Deploy GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
