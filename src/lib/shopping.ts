@@ -19,10 +19,10 @@ export function isTodayInTimezone(iso:string,timezone:string,now=new Date()):boo
   return format(new Date(iso))===format(now)
 }
 
-export async function loadShoppingItems(householdId:string,timezone:string):Promise<Result<ShoppingItem[]>>{
-  const {data,error}=await supabase.from('shopping_items').select('*').eq('household_id',householdId).is('deleted_at',null).order('created_at',{ascending:false})
+export async function loadShoppingItems(householdId:string):Promise<Result<ShoppingItem[]>>{
+  const {data,error}=await supabase.rpc('list_current_shopping_items',{p_household_id:householdId})
   if(error)return{data:null,error:friendlyShoppingError(error)}
-  return{data:((data||[]) as ShoppingItem[]).filter(item=>item.status==='active'||(item.bought_at&&isTodayInTimezone(item.bought_at,timezone))),error:null}
+  return{data:(data||[]) as ShoppingItem[],error:null}
 }
 
 async function mutate(fn:string,args:Record<string,unknown>,name?:string):Promise<Result<ShoppingItem>>{
@@ -38,5 +38,5 @@ export function restoreShoppingItem(item:ShoppingItem){return mutate('restore_sh
 export function deleteShoppingItem(item:ShoppingItem){return mutate('delete_shopping_item',{p_item_id:item.id,p_expected_version:item.version},item.name)}
 export function undoDeleteShoppingItem(item:ShoppingItem){return mutate('undo_delete_shopping_item',{p_item_id:item.id,p_expected_version:item.version},item.name)}
 
-export function subscribeShopping(householdId:string,onChange:()=>void):RealtimeChannel{return supabase.channel(`shopping:${householdId}`).on('postgres_changes',{event:'*',schema:'public',table:'shopping_items',filter:`household_id=eq.${householdId}`},onChange).subscribe()}
+export function subscribeShopping(householdId:string,onChange:()=>void):RealtimeChannel{return supabase.channel(`shopping:${householdId}`).on('postgres_changes',{event:'*',schema:'public',table:'shopping_items',filter:`household_id=eq.${householdId}`},onChange).subscribe(status=>{if(status==='SUBSCRIBED')onChange()})}
 export async function unsubscribeShopping(channel:RealtimeChannel){await supabase.removeChannel(channel)}

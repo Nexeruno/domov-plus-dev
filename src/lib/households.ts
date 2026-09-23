@@ -22,7 +22,9 @@ export function friendlyHouseholdError(error:unknown):string{
 }
 
 export async function loadHousehold():Promise<Result<HouseholdData>>{
-  const {data:profile,error:profileError}=await supabase.from('profiles').select('current_household_id').single()
+  const {data:{user},error:userError}=await supabase.auth.getUser()
+  if(userError||!user)return{data:null,error:'Domácnost se nepodařilo načíst.'}
+  const {data:profile,error:profileError}=await supabase.from('profiles').select('current_household_id').eq('id',user.id).single()
   if(profileError)return{data:null,error:friendlyHouseholdError(profileError)}
   if(!profile.current_household_id)return{data:null,error:null}
   const id=profile.current_household_id
