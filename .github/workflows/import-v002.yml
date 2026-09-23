@@ -38,7 +38,7 @@ jobs:
 
       - name: Reject sensitive values
         run: |
-          if grep -RIlE 'xkeysib-|xsmtpsib-|sb_secret_|Domov-Test-[AB]-2026' --exclude-dir=.git .; then
+          if grep -RIlE 'xkeysib-|xsmtpsib-|sb_secret_|Domov-Test-[AB]-2026' --exclude-dir=.git --exclude=import-v002.yml .; then
             echo 'Repository contains a forbidden sensitive value.'
             exit 1
           fi
