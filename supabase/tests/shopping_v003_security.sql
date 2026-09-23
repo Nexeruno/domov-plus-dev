@@ -68,5 +68,34 @@ do $$begin insert into shopping_items(id,household_id,name,created_by) values(ge
 select pg_temp.ok((select count(*)=0 from household_audit_log where household_id=(select hb from ids)),'29 A cannot read B audit');
 select pg_temp.ok((select timezone='Europe/Prague' from households where id=(select ha from ids)),'30 household timezone default');
 reset role;
+-- The server-side list includes active items regardless of age and only purchases
+-- inside the current local day; the other household is never exposed.
+update public.shopping_items set bought_at=(((now() at time zone 'Europe/Prague')::date - 1)::timestamp at time zone 'Europe/Prague')
+where id='33000000-0000-4000-8000-000000000007';
+update public.shopping_items set created_at=now()-interval '90 days'
+where id='33000000-0000-4000-8000-000000000003';
+select set_config('request.jwt.claim.sub','31000000-0000-4000-8000-000000000001',true); set local role authenticated;
+select public.add_shopping_item((select ha from ids),'33000000-0000-4000-8000-000000000008','Dnešní nákup');
+select public.mark_shopping_item_bought('33000000-0000-4000-8000-000000000008',1);
+select pg_temp.ok((select count(*)=0 from public.list_current_shopping_items((select ha from ids)) where id='33000000-0000-4000-8000-000000000007'),'31 old bought excluded');
+select pg_temp.ok((select count(*)=1 from public.list_current_shopping_items((select ha from ids)) where id='33000000-0000-4000-8000-000000000008'),'41 today bought included');
+select pg_temp.ok((select count(*)=1 from public.list_current_shopping_items((select ha from ids)) where id='33000000-0000-4000-8000-000000000003'),'32 old active included');
+select pg_temp.ok((select count(*)=0 from public.list_current_shopping_items((select ha from ids)) where household_id=(select hb from ids)),'33 no foreign rows in current list');
+do $$begin perform public.list_current_shopping_items((select hb from ids)); raise exception 'foreign list accepted'; exception when insufficient_privilege then perform pg_temp.ok(true,'34 foreign list denied'); end$$;
+select pg_temp.ok(not public.is_household_member((select hb from ids),'32000000-0000-4000-8000-000000000002'),'35 A cannot probe B membership');
+select pg_temp.ok(not public.is_household_owner((select hb from ids),'32000000-0000-4000-8000-000000000002'),'36 A cannot probe B ownership');
+reset role;
+select set_config('request.jwt.claim.sub','32000000-0000-4000-8000-000000000002',true); set local role authenticated;
+select pg_temp.ok(not public.is_household_member((select ha from ids),'31000000-0000-4000-8000-000000000001'),'37 B cannot probe A membership');
+select pg_temp.ok(not public.is_household_owner((select ha from ids),'31000000-0000-4000-8000-000000000001'),'38 B cannot probe A ownership');
+reset role;
+select pg_temp.ok(
+  (timestamp '2026-03-29 00:00' at time zone 'Europe/Prague') = timestamptz '2026-03-28 23:00+00'
+  and (timestamp '2026-03-30 00:00' at time zone 'Europe/Prague') = timestamptz '2026-03-29 22:00+00',
+  '39 Prague spring DST day is 23 hours');
+select pg_temp.ok(
+  (timestamp '2026-10-25 00:00' at time zone 'Europe/Prague') = timestamptz '2026-10-24 22:00+00'
+  and (timestamp '2026-10-26 00:00' at time zone 'Europe/Prague') = timestamptz '2026-10-25 23:00+00',
+  '40 Prague autumn DST day is 25 hours');
 select count(*) as passed_v003_tests from v003_results;
 rollback;

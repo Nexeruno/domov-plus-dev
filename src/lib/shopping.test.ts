@@ -2,7 +2,7 @@ import {beforeEach,describe,expect,it,vi} from 'vitest'
 
 const {rpc,channel,removeChannel}=vi.hoisted(()=>({rpc:vi.fn(),channel:vi.fn(),removeChannel:vi.fn()}))
 vi.mock('./supabase',()=>({supabase:{rpc,channel,removeChannel,from:vi.fn()}}))
-import {addShoppingItem,buyShoppingItem,deleteShoppingItem,friendlyShoppingError,isTodayInTimezone,renameShoppingItem,restoreShoppingItem,subscribeShopping,undoDeleteShoppingItem,type ShoppingItem} from './shopping'
+import {addShoppingItem,buyShoppingItem,deleteShoppingItem,friendlyShoppingError,isTodayInTimezone,loadShoppingItems,renameShoppingItem,restoreShoppingItem,subscribeShopping,undoDeleteShoppingItem,type ShoppingItem} from './shopping'
 
 const item:ShoppingItem={id:'10000000-0000-4000-8000-000000000001',household_id:'20000000-0000-4000-8000-000000000002',name:'Mléko',status:'active',created_by:'u',created_at:'2026-01-01T00:00:00Z',updated_at:'2026-01-01T00:00:00Z',version:3,bought_by:null,bought_at:null,deleted_at:null}
 
@@ -22,4 +22,6 @@ describe('nákupní seznam V0.0.3',()=>{
   it('pražský den není odvozený z prostého UTC data',()=>{const now=new Date('2026-03-02T00:15:00+01:00');expect(isTodayInTimezone('2026-03-01T23:10:00Z','Europe/Prague',now)).toBe(true);expect(isTodayInTimezone('2026-03-01T21:30:00Z','Europe/Prague',now)).toBe(false)})
   it('respektuje i jiné IANA časové pásmo',()=>expect(isTodayInTimezone('2026-01-01T02:00:00Z','America/New_York',new Date('2026-01-01T03:00:00Z'))).toBe(true))
   it('Realtime odebírá pouze změny dané domácnosti',()=>{const on=vi.fn().mockReturnThis(),subscribe=vi.fn().mockReturnValue('channel');channel.mockReturnValue({on,subscribe});subscribeShopping(item.household_id,vi.fn());expect(on).toHaveBeenCalledWith('postgres_changes',expect.objectContaining({table:'shopping_items',filter:`household_id=eq.${item.household_id}`}),expect.any(Function));expect(subscribe).toHaveBeenCalled()})
+  it('běžný seznam načítá omezeným serverovým RPC',async()=>{rpc.mockResolvedValue({data:[item],error:null});expect((await loadShoppingItems(item.household_id)).data).toEqual([item]);expect(rpc).toHaveBeenCalledWith('list_current_shopping_items',{p_household_id:item.household_id})})
+  it('po obnovení Realtime připojení vyvolá resync',()=>{const on=vi.fn().mockReturnThis(),subscribe=vi.fn();channel.mockReturnValue({on,subscribe});const update=vi.fn();subscribeShopping(item.household_id,update);const onStatus=subscribe.mock.calls[0][0];onStatus('SUBSCRIBED');expect(update).toHaveBeenCalledOnce()})
 })

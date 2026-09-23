@@ -1,9 +1,9 @@
 import {beforeEach,describe,expect,it,vi} from 'vitest'
 
-const {rpc,invoke}=vi.hoisted(()=>({rpc:vi.fn(),invoke:vi.fn()}))
-vi.mock('./supabase',()=>({supabase:{rpc,functions:{invoke}}}))
+const {rpc,invoke,getUser,from}=vi.hoisted(()=>({rpc:vi.fn(),invoke:vi.fn(),getUser:vi.fn(),from:vi.fn()}))
+vi.mock('./supabase',()=>({supabase:{rpc,functions:{invoke},auth:{getUser},from}}))
 
-import {cancelInvitation,createHousehold,friendlyHouseholdError,getInvitationPreview,renameHousehold,respondToInvitation,sendInvitation} from './households'
+import {cancelInvitation,createHousehold,friendlyHouseholdError,getInvitationPreview,loadHousehold,renameHousehold,respondToInvitation,sendInvitation} from './households'
 
 describe('bezpečná logika domácností a pozvánek',()=>{
   beforeEach(()=>vi.clearAllMocks())
@@ -50,5 +50,23 @@ describe('bezpečná logika domácností a pozvánek',()=>{
     expect(friendlyHouseholdError({message:'active_invitation_exists'})).toContain('už čeká')
     expect(friendlyHouseholdError({message:'already_household_member'})).toContain('už je členem')
     expect(friendlyHouseholdError({message:'invitation_email_mismatch'})).toContain('jinému e-mailu')
+  })
+
+  it.each(['user-a','user-b'])('načte jen vlastní current_household_id pro %s i při dvou profilech',async userId=>{
+    getUser.mockResolvedValue({data:{user:{id:userId}},error:null})
+    const profileEq=vi.fn().mockReturnValue({single:()=>Promise.resolve({data:{current_household_id:'household-a'},error:null})})
+    from.mockImplementation((table:string)=>({select:()=>table==='profiles'
+      ?{eq:profileEq}
+      :{eq:()=>table==='households'?{single:()=>Promise.resolve({data:{id:'household-a',name:'Domov',timezone:'Europe/Prague'},error:null})}:{order:()=>Promise.resolve({data:table==='household_memberships'?[{user_id:'user-a',profiles:{display_name:'A'}},{user_id:'user-b',profiles:{display_name:'B'}}]:[],error:null}),eq:()=>({order:()=>Promise.resolve({data:[],error:null})})}}}))
+    const result=await loadHousehold()
+    expect(profileEq).toHaveBeenCalledWith('id',userId)
+    expect(result.error).toBeNull()
+    expect(result.data?.members).toHaveLength(2)
+  })
+
+  it('bez platného ověření uživatele nenačítá profil',async()=>{
+    getUser.mockResolvedValue({data:{user:null},error:null})
+    expect((await loadHousehold()).error).toContain('nepodařilo načíst')
+    expect(from).not.toHaveBeenCalled()
   })
 })
