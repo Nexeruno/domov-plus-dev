@@ -11,7 +11,12 @@ const Message=({status}:{status:Status})=>status?<div role="alert" className={`m
 export default function ShoppingApp({data}:{data:NonNullable<HouseholdData>}){
   const nav=useNavigate(),loc=useLocation();
   const tab=loc.pathname==='/dnes'?'today':loc.pathname==='/energie'?'energy':'shopping'
-  return <main className="app-shell"><header className="app-header"><div className="mini-brand"><Home/>Domov+</div><div className="header-actions"><button aria-label="Správa domácnosti" onClick={()=>nav('/domacnost')}><House/></button><button aria-label="Otevřít profil" onClick={()=>nav('/profil')}><UserRound/></button></div></header><div className="app-content">{tab==='shopping'?<Shopping householdId={data.household.id} timezone={data.household.timezone}/>:<Placeholder title={tab==='today'?'Dnes':'Energie'}/>}</div><nav className="bottom-nav" aria-label="Hlavní navigace"><button className={tab==='today'?'active':''} onClick={()=>nav('/dnes')}><CalendarDays/><span>Dnes</span></button><button className={tab==='shopping'?'active':''} onClick={()=>nav('/nakup')}><ShoppingBasket/><span>Nákup</span></button><button className={tab==='energy'?'active':''} onClick={()=>nav('/energie')}><Lightbulb/><span>Energie</span></button></nav></main>
+  return <main className="app-shell"><header className="app-header"><div className="mini-brand"><Home/>Domov+</div><div className="header-actions"><button aria-label="Správa domácnosti" onClick={()=>nav('/domacnost')}><House/></button><button aria-label="Otevřít profil" onClick={()=>nav('/profil')}><UserRound/></button></div></header><div className="app-content">{tab==='shopping'?<Shopping householdId={data.household.id} timezone={data.household.timezone}/>:<Placeholder title={tab==='today'?'Dnes':'Energie'}/>}</div><BottomNav active={tab}/></main>
+}
+
+export function BottomNav({active}:{active?:'today'|'shopping'|'energy'}){
+  const nav=useNavigate()
+  return <nav className="bottom-nav" aria-label="Hlavní navigace"><button className={active==='today'?'active':''} onClick={()=>nav('/dnes')}><CalendarDays/><span>Dnes</span></button><button className={active==='shopping'?'active':''} onClick={()=>nav('/nakup')}><ShoppingBasket/><span>Nákup</span></button><button className={active==='energy'?'active':''} onClick={()=>nav('/energie')}><Lightbulb/><span>Energie</span></button></nav>
 }
 
 function Placeholder({title}:{title:string}){return <section className="placeholder"><h1>{title}</h1><p>Tato část bude dostupná v další verzi.</p></section>}
