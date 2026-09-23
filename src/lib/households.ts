@@ -1,6 +1,6 @@
 import { supabase } from './supabase'
 
-export type Household={id:string;name:string}
+export type Household={id:string;name:string;timezone:string}
 export type HouseholdMember={user_id:string;role:'owner'|'member';profiles:{display_name:string}|null}
 export type HouseholdInvitation={id:string;target_email:string;status:string;created_at:string;expires_at:string}
 export type HouseholdData={household:Household;members:HouseholdMember[];invitations:HouseholdInvitation[]}|null
@@ -27,7 +27,7 @@ export async function loadHousehold():Promise<Result<HouseholdData>>{
   if(!profile.current_household_id)return{data:null,error:null}
   const id=profile.current_household_id
   const [household,members,invitations]=await Promise.all([
-    supabase.from('households').select('id,name').eq('id',id).single(),
+    supabase.from('households').select('id,name,timezone').eq('id',id).single(),
     supabase.from('household_memberships').select('user_id,role,profiles(display_name)').eq('household_id',id).order('created_at'),
     supabase.from('household_invitations').select('id,target_email,status,created_at,expires_at').eq('household_id',id).eq('status','pending').order('created_at',{ascending:false})
   ])
