@@ -1,0 +1,22 @@
+name: Publish annotated V0.0.3 tag
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  tag:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Annotate final commit
+        run: |
+          test -z "$(git ls-remote --tags origin refs/tags/v0.0.3)"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a v0.0.3 -m "Domov+ V0.0.3 – online shared shopping list milestone"
+          git push origin refs/tags/v0.0.3
