@@ -1,0 +1,28 @@
+name: Live V0.0.3 shopping verification
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  shopping-e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Two-account API and Realtime E2E
+        run: npm run test:e2e:shopping
+        env:
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
+          E2E_EMAIL_A: domov-v003-a-20260924@example.invalid
+          E2E_PASSWORD_A: ${{ secrets.E2E_PASSWORD_A }}
+          E2E_EMAIL_B: domov-v003-b-20260924@example.invalid
+          E2E_PASSWORD_B: ${{ secrets.E2E_PASSWORD_B }}
