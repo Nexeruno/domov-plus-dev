@@ -1,16 +1,17 @@
 import {afterEach,beforeEach,expect,it,vi} from 'vitest'
-import {cleanup,render,screen} from '@testing-library/react'
+import {cleanup,render,screen,waitFor} from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import {MemoryRouter,useLocation} from 'react-router-dom'
 import type {User} from '@supabase/supabase-js'
 
-const {loadHousehold}=vi.hoisted(()=>({loadHousehold:vi.fn()}))
+const {loadHousehold,loadEnergyReadings}=vi.hoisted(()=>({loadHousehold:vi.fn(),loadEnergyReadings:vi.fn()}))
 vi.mock('./lib/households',()=>({loadHousehold}))
+vi.mock('./lib/energy',async importOriginal=>({...await importOriginal<typeof import('./lib/energy')>(),loadEnergyReadings}))
 vi.mock('./lib/supabase',()=>({isConfigured:true}))
 import {HomeGate} from './App'
 
 const user={id:'user-a',user_metadata:{display_name:'A'},app_metadata:{},aud:'authenticated',created_at:'2026-01-01T00:00:00Z'} as User
-beforeEach(()=>vi.clearAllMocks())
+beforeEach(()=>{vi.clearAllMocks();loadEnergyReadings.mockResolvedValue({data:[],error:null})})
 afterEach(cleanup)
 
 it('chyba načtení nikdy nenabídne založení domácnosti a lze opakovat',async()=>{
@@ -37,7 +38,7 @@ it('domácnost otevře Dnes a Energie bez dalších modulů',async()=>{
   expect(screen.getByRole('navigation',{name:'Hlavní navigace'}).querySelectorAll('button')).toHaveLength(2)
   await userEvent.click(screen.getByRole('button',{name:'Energie'}))
   expect(await screen.findByRole('heading',{name:'Energie'})).toBeInTheDocument()
-  expect(screen.getByText('Tato část bude dostupná v další verzi.')).toBeInTheDocument()
+  expect(await screen.findByRole('button',{name:'Přidat odečet'})).toBeInTheDocument()
 })
 
 it('starý odkaz do odstraněné části zobrazí Dnes bez dalšího síťového požadavku',async()=>{
@@ -47,7 +48,7 @@ it('starý odkaz do odstraněné části zobrazí Dnes bez dalšího síťového
     function Path(){return <span data-testid="path">{useLocation().pathname}</span>}
     render(<MemoryRouter initialEntries={['/nakup']}><HomeGate user={user}/><Path/></MemoryRouter>)
     expect(await screen.findByRole('heading',{name:'Dnes'})).toBeInTheDocument()
-    expect(await screen.findByTestId('path')).toHaveTextContent('/dnes')
+    await waitFor(()=>expect(screen.getByTestId('path')).toHaveTextContent('/dnes'))
     expect(screen.queryByRole('button',{name:'Nákup'})).not.toBeInTheDocument()
     expect(fetchSpy).not.toHaveBeenCalled()
   }finally{fetchSpy.mockRestore()}

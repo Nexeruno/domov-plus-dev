@@ -1,6 +1,6 @@
-# Domov+ – pracovní větev bez Nákupu
+# Domov+ – Energy foundation V0.1 (pracovní větev)
 
-Rodinná PWA pro e-mailové přihlášení, volitelné rychlé přihlášení, domácnosti a jednorázové e-mailové pozvánky. Přihlášený člen domácnosti vidí dvě části hlavní navigace: **Dnes** a **Energie**. V této verzi jde pouze o zástupné obrazovky; jejich budoucí funkce nejsou implementované.
+Rodinná PWA pro e-mailové přihlášení, volitelné rychlé přihlášení, domácnosti a jednorázové e-mailové pozvánky. Navigace obsahuje **Dnes** (zástupná obrazovka) a **Energie** (ruční odečty jednoho elektroměru na domácnost). Nákup je odstraněný.
 
 ## Lokální spuštění
 
@@ -10,7 +10,11 @@ Node.js 22+, `npm ci`, zkopírovat `.env.example` do `.env.local` a doplnit klie
 
 `npm test`, `npm run typecheck`, `npm run build` a `npm audit --omit=dev`.
 
-Testy aplikace ověřují autentizaci, domácnosti, načtení domácnosti, pozvánkové cesty a dvoupoložkovou hlavní navigaci. `supabase/tests/households_v002_security.sql` je samostatná databázová/RLS sada; `npm test` ji nespouští. `npm run test:e2e:api` a `npm run test:e2e:email` vyžadují oddělené vývojové účty a prostředí. Fyzické PWA ověření na Androidu/iPhonu je samostatný ruční krok.
+Testy aplikace ověřují autentizaci, domácnosti, navigaci a výpočty/UI Energie. `supabase/tests/energy_v01_security.sql` je transakční DB/RLS test, který se spouští **až po migraci na odděleném DEV projektu**; `npm test` ho nespouští. Starší `supabase/tests/households_v002_security.sql` ověřuje domácnosti. Fyzické PWA ověření na Androidu/iPhonu je samostatný ruční krok.
+
+## Energie
+
+`supabase/migrations/20260929120000_energy_foundation_v01.sql` je aditivní delta nad existujícím schématem. Na výslovný pokyn vlastníka byla aplikována do jediného připojeného, veřejně používaného projektu jako migrace `20260929071711_energy_foundation_v01`. Nespouštějte ji znovu. Klient této pracovní větve dosud není veřejně nasazen. DB/RLS test `supabase/tests/energy_v01_security.sql` proběhl transakčně s rollbackem; souběžný zápis na dočasné domácnosti potvrdil serializaci a testovací data byla odstraněna. Přihlášené browser E2E zatím chybí. Klient čte pouze odečty své domácnosti přes RLS; nový odečet přidává přes ověřené RPC. Zápisy jsou jen v rostoucím pořadí dat a kumulativních stavů. První odečet je baseline. Každý další interval počítá `VT = nový VT − předchozí VT`, obdobně NT, celkem jejich součet a orientační cenu `VT × cena VT z nového odečtu + NT × cena NT z nového odečtu`. Délka je rozdíl kalendářních dat. Ceny jsou uživatelské odhady za kWh, ne fakturační rozpis. Neexistuje editace, mazání ani reset elektroměru.
 
 ## Databáze a historie
 
