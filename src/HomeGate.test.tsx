@@ -1,13 +1,12 @@
 import {afterEach,beforeEach,expect,it,vi} from 'vitest'
 import {cleanup,render,screen} from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import {MemoryRouter} from 'react-router-dom'
+import {MemoryRouter,useLocation} from 'react-router-dom'
 import type {User} from '@supabase/supabase-js'
 
 const {loadHousehold}=vi.hoisted(()=>({loadHousehold:vi.fn()}))
 vi.mock('./lib/households',()=>({loadHousehold}))
 vi.mock('./lib/supabase',()=>({isConfigured:true}))
-vi.mock('./ShoppingApp',()=>({default:()=> <div>Nákup načten</div>,BottomNav:()=> <nav>Hlavní navigace</nav>}))
 import {HomeGate} from './App'
 
 const user={id:'user-a',user_metadata:{display_name:'A'},app_metadata:{},aud:'authenticated',created_at:'2026-01-01T00:00:00Z'} as User
@@ -28,5 +27,28 @@ it('domácnost se dvěma členy zobrazí obě jména a návrat',async()=>{
   render(<MemoryRouter initialEntries={['/domacnost']}><HomeGate user={user}/></MemoryRouter>)
   expect(await screen.findByText('A')).toBeInTheDocument()
   expect(screen.getByText('B')).toBeInTheDocument()
-  expect(screen.getByRole('button',{name:'Zpět na nákup'})).toBeInTheDocument()
+  expect(screen.getByRole('button',{name:'Zpět do aplikace'})).toBeInTheDocument()
+})
+
+it('domácnost otevře Dnes a Energie bez dalších modulů',async()=>{
+  loadHousehold.mockResolvedValue({data:{household:{id:'h',name:'Domov',timezone:'Europe/Prague'},members:[{user_id:'user-a',role:'owner',profiles:{display_name:'A'}}],invitations:[]},error:null})
+  render(<MemoryRouter initialEntries={['/dnes']}><HomeGate user={user}/></MemoryRouter>)
+  expect(await screen.findByRole('heading',{name:'Dnes'})).toBeInTheDocument()
+  expect(screen.getByRole('navigation',{name:'Hlavní navigace'}).querySelectorAll('button')).toHaveLength(2)
+  await userEvent.click(screen.getByRole('button',{name:'Energie'}))
+  expect(await screen.findByRole('heading',{name:'Energie'})).toBeInTheDocument()
+  expect(screen.getByText('Tato část bude dostupná v další verzi.')).toBeInTheDocument()
+})
+
+it('starý odkaz do odstraněné části zobrazí Dnes bez dalšího síťového požadavku',async()=>{
+  loadHousehold.mockResolvedValue({data:{household:{id:'h',name:'Domov',timezone:'Europe/Prague'},members:[],invitations:[]},error:null})
+  const fetchSpy=vi.spyOn(globalThis,'fetch')
+  try{
+    function Path(){return <span data-testid="path">{useLocation().pathname}</span>}
+    render(<MemoryRouter initialEntries={['/nakup']}><HomeGate user={user}/><Path/></MemoryRouter>)
+    expect(await screen.findByRole('heading',{name:'Dnes'})).toBeInTheDocument()
+    expect(await screen.findByTestId('path')).toHaveTextContent('/dnes')
+    expect(screen.queryByRole('button',{name:'Nákup'})).not.toBeInTheDocument()
+    expect(fetchSpy).not.toHaveBeenCalled()
+  }finally{fetchSpy.mockRestore()}
 })

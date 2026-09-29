@@ -1,65 +1,21 @@
-# Domov+ V0.0.3 (stabilizace před uzamčením)
+# Domov+ – pracovní větev bez Nákupu
 
-Rodinná PWA: e-mailová autentizace, volitelné rychlé přihlášení, domácnosti s rovnocennými vlastníky, jednorázové e-mailové pozvánky a jeden sdílený online nákupní seznam pro každou domácnost. Nákup se mezi otevřenými klienty obnovuje přes Supabase Realtime. Bez internetu nelze provádět změny; offline fronta a synchronizace nejsou součástí V0.0.3.
-
-## Technologie
-
-- React + TypeScript + Vite
-- Supabase Auth, PostgreSQL, RLS a Edge Functions
-- Brevo transactional e-mail
-- PWA pro Android a iPhone
+Rodinná PWA pro e-mailové přihlášení, volitelné rychlé přihlášení, domácnosti a jednorázové e-mailové pozvánky. Přihlášený člen domácnosti vidí dvě části hlavní navigace: **Dnes** a **Energie**. V této verzi jde pouze o zástupné obrazovky; jejich budoucí funkce nejsou implementované.
 
 ## Lokální spuštění
 
-1. Nainstalujte Node.js 22 nebo novější.
-2. Spusťte `npm ci`.
-3. Zkopírujte `.env.example` jako `.env.local`.
-4. Doplňte pouze klientsky bezpečné hodnoty `VITE_SUPABASE_URL` a `VITE_SUPABASE_PUBLISHABLE_KEY`.
-5. Spusťte `npm run dev`.
+Node.js 22+, `npm ci`, zkopírovat `.env.example` do `.env.local` a doplnit klientsky bezpečné `VITE_SUPABASE_URL` a `VITE_SUPABASE_PUBLISHABLE_KEY`. Potom `npm run dev`. Nikdy nevkládat serverové klíče ani hesla do klientské konfigurace.
 
-Do klientského prostředí nikdy nevkládejte `service_role`, Brevo klíč, SMTP klíč ani hesla.
+## Kontroly
 
-## Databáze a serverová funkce
+`npm test`, `npm run typecheck`, `npm run build` a `npm audit --omit=dev`.
 
-Migrace se aplikují v pořadí podle názvu ze složky `supabase/migrations/`.
+Testy aplikace ověřují autentizaci, domácnosti, načtení domácnosti, pozvánkové cesty a dvoupoložkovou hlavní navigaci. `supabase/tests/households_v002_security.sql` je samostatná databázová/RLS sada; `npm test` ji nespouští. `npm run test:e2e:api` a `npm run test:e2e:email` vyžadují oddělené vývojové účty a prostředí. Fyzické PWA ověření na Androidu/iPhonu je samostatný ruční krok.
 
-Edge Function `send-household-invitation` vyžaduje serverové Supabase secrets:
+## Databáze a historie
 
-- `BREVO_API_KEY`
-- `INVITATION_SENDER_EMAIL`
+`supabase/migrations/` obsahuje historické migrační soubory včetně schématu předchozího uzamčeného releasu. Neměnit je zpětně. Aplikovaná delta V0.0.4 na DEV je pro dohledatelnost uložena v `supabase/history/applied-dev/`; **není to instrukce ji znovu spustit**. Současný DEV obsahuje historická nákupní data a synchronizační evidenci. Tato větev je nečte ani nemění. Jejich případné odstranění bude samostatný krok po záloze a posouzení dat.
 
-Tyto hodnoty nejsou součástí repozitáře. Supabase URL a vestavěný klientský klíč poskytuje prostředí Edge Functions.
+`supabase/pending/` obsahuje návrh nedestruktivního odstavení starých nákupních API. **Není aplikovaný ani otestovaný transakčním spuštěním v databázi.** Musí se zkontrolovat vůči cílovému prostředí a časovat až po nahrazení veřejného klienta. Dokud nebude aplikován, staré API zůstává dostupné pro oprávněné uživatele starší verze.
 
-## Kontroly a vrstvy testů
-
-```sh
-npm test
-npm run typecheck
-npm run build
-npm audit --omit=dev
-```
-
-Unit/component testy v `src/**/*.test.ts(x)` ověřují autentizační a domácnostní logiku, vykreslení chybového stavu, nákupní mutace a souběžné Realtime refreshe. Databázové/RLS sady `supabase/tests/households_v002_security.sql` a `supabase/tests/shopping_v003_security.sql` se spouštějí proti vývojové PostgreSQL databázi po aplikaci všech migrací v transakci a na konci provedou `rollback`. Samotné `npm test` databázové SQL testy nespouští.
-
-Živé testy používají výhradně dočasné vývojové účty a proměnné prostředí z `.env.example`:
-
-```sh
-npm run test:e2e:api
-npm run test:e2e:email
-npm run test:e2e:shopping
-```
-
-`test:e2e:api` a `test:e2e:shopping` jsou živé API/Realtime integrační E2E skripty, ne test skutečného vykreslení v prohlížeči. Fyzický PWA test instalace, aktualizace a ovládání na Androidu a iPhonu je samostatný ruční krok. Živý E2E vyžaduje testovací účty a bezpečně poskytnuté proměnné prostředí; bez nich ho nelze považovat za spuštěný.
-
-## Bezpečnost
-
-- Izolace domácností je vynucena databázovým RLS a bezpečnými RPC.
-- Klient nemá přímé oprávnění měnit členství, pozvánky ani audit.
-- Pozvánkové tokeny jsou jednorázové; databáze ukládá pouze SHA-256 hash.
-- E-mail pozvánky musí odpovídat e-mailu přihlášeného účtu.
-- Skutečné secrets patří pouze do Supabase/GitHub nastavení, nikdy do Git historie.
-- Nákupní položky se čtou jen v příslušné domácnosti; mutace jsou auditované RPC s kontrolou členství a verze. Aktivní duplicity omezuje databázový unikátní index.
-
-## Rozsah V0.0.3
-
-Obsahuje online nákup; Dnes a Energie jsou pouze nefunkční zástupné obrazovky. Neobsahuje offline synchronizaci, push notifikace, další části Energie, místnosti, smart-home ani AI. Verze není zatím označena tagem.
+Edge Function `send-household-invitation` vyžaduje serverové `BREVO_API_KEY` a `INVITATION_SENDER_EMAIL`. Pozvánky, členství a audit domácností zůstávají chráněné stávajícími RLS a RPC pravidly. Tato větev nemění databázi, `main`, tagy ani veřejné nasazení.

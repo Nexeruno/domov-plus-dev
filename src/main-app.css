@@ -1,0 +1,15 @@
+.app-shell{min-height:100svh;max-width:760px;margin:auto;padding-bottom:92px}
+.app-header{height:76px;display:flex;align-items:center;justify-content:space-between;padding:14px 18px}
+.mini-brand{display:flex;align-items:center;gap:9px;font-weight:800;font-size:1.15rem}
+.mini-brand svg{width:30px;height:30px;padding:6px;border-radius:9px;background:#126454;color:#fff}
+.header-actions{display:flex;gap:10px}
+.header-actions button{width:44px;height:44px;border:0;border-radius:13px;background:#fff;color:#18312b;display:grid;place-items:center;cursor:pointer}
+.header-actions svg{width:21px}
+.app-content{padding:10px 18px}
+.placeholder{text-align:center;padding-top:22vh}
+.placeholder h1{font-size:2rem;margin:12px 0 24px}
+.placeholder p{color:#667873}
+.bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:min(100%,760px);height:76px;padding-bottom:env(safe-area-inset-bottom);display:grid;grid-template-columns:repeat(2,1fr);background:rgba(255,255,255,.97);border-top:1px solid #dce7e2;z-index:5}
+.bottom-nav button{border:0;background:transparent;color:#70817c;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:.78rem;font-weight:700;cursor:pointer}
+.bottom-nav button.active{color:#126454}
+.bottom-nav svg{width:24px}
