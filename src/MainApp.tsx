@@ -1,9 +1,11 @@
 import {useEffect} from 'react'
 import {CalendarDays,Home,House,Lightbulb,UserRound} from 'lucide-react'
 import {useLocation,useNavigate} from 'react-router-dom'
+import type {Household} from './lib/households'
+import Energy from './Energy'
 import './main-app.css'
 
-export default function MainApp(){
+export default function MainApp({household}:{household:Household}){
   const navigate=useNavigate(),location=useLocation()
   const energy=location.pathname==='/energie'
   useEffect(()=>{if(location.pathname==='/nakup')navigate('/dnes',{replace:true})},[location.pathname,navigate])
@@ -15,10 +17,7 @@ export default function MainApp(){
         <button aria-label="Otevřít profil" onClick={()=>navigate('/profil')}><UserRound/></button>
       </div>
     </header>
-    <section className="app-content placeholder">
-      <h1>{energy?'Energie':'Dnes'}</h1>
-      <p>Tato část bude dostupná v další verzi.</p>
-    </section>
+    {energy?<Energy household={household}/>:<section className="app-content placeholder"><h1>Dnes</h1><p>Tato část bude dostupná v další verzi.</p></section>}
     <BottomNav active={energy?'energy':'today'}/>
   </main>
 }

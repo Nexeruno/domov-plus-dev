@@ -1,0 +1,16 @@
+.energy-page{padding-bottom:26px;color:#18312b}
+.energy-page h1{font-size:2rem;margin:12px 0 22px}
+.energy-page h2{font-size:1.25rem;margin:16px 0}
+.energy-summary,.energy-entry{background:#fff;border:1px solid #dce7e2;border-radius:20px;padding:20px;margin-bottom:14px}
+.energy-summary p{line-height:1.5;color:#4b605a}
+.energy-summary>strong{font-size:2rem}
+.energy-actions{display:grid;gap:12px;margin-top:20px}
+.energy-primary,.energy-secondary{min-height:54px;border-radius:15px;padding:12px 18px;font-size:1rem;font-weight:700;cursor:pointer}
+.energy-primary{background:#116254;border:0;color:#fff}.energy-secondary{background:#fff;border:1px solid #b7c9c3;color:#18312b}
+.energy-primary:disabled,.energy-secondary:disabled{opacity:.55;cursor:default}
+.energy-form{display:grid;gap:14px}.energy-form label{display:grid;gap:6px;font-weight:700}
+.energy-form input{font:inherit;width:100%;min-height:52px;padding:10px 12px;border:1px solid #b7c9c3;border-radius:12px;background:#fff;color:#18312b}
+.energy-text-button{border:0;background:transparent;color:#116254;min-height:48px;font-weight:700;margin-top:12px;cursor:pointer}
+.energy-entry{display:grid;gap:7px}.energy-entry span{color:#4b605a}
+.energy-error{background:#fff0ed;color:#87372b;padding:14px;border-radius:12px;margin-bottom:14px}
+.energy-error button{background:transparent;border:0;text-decoration:underline;color:inherit;font:inherit;cursor:pointer}
