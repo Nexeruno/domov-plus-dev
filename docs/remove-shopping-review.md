@@ -1,5 +1,7 @@
 # Review odstranění Nákupu – 2026-09-28
 
+> Stav po review (2026-09-29): klient bez Nákupu byl nasazen z `c88794f`; DEV migrace `20260929062456_decommission_shopping_api_after_client_deploy` odebrala klientská oprávnění k Nákupu a jeho Realtime publikaci. Data a audit zůstaly. Následující inventura a plán zachycují stav v době původního review.
+
 ## Hranice ověření
 
 Pracovní větev `remove-shopping` vznikla z tagu `v0.0.3` (`b9e62eca74579364e14b22a22f03f46713917a6f`), nikoli revertováním rozpracované větve `v0.0.4-offline` (`b0daf94`). Veřejný klient stále používá starý release. Konektor poskytuje jeden dostupný Supabase projekt `ganyhcjzwgmiarkhcuej` (DEV); žádný zvlášť připojený produkční projekt nebyl zjištěn. V tomto review neproběhl žádný zápis do DB.
